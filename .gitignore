@@ -1,0 +1,6 @@
+.env
+seed_users.json
+__pycache__/
+*.pyc
+instance/
+.DS_Store

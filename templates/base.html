@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Deal Assignment{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    {% if g.user %}
+    <header class="topbar">
+        <a class="brand" href="{{ url_for('dashboard') }}">Deal Assignment</a>
+        <nav>
+            {% if g.user.role in ['seller', 'admin'] %}
+            <a href="{{ url_for('new_deal') }}">New deal</a>
+            {% endif %}
+            <a href="{{ url_for('change_password') }}">Account</a>
+            <span class="whoami">{{ g.user.name }} &middot; {{ g.user.role.replace('_', ' ') }}</span>
+            <a href="{{ url_for('logout') }}">Log out</a>
+        </nav>
+    </header>
+    {% endif %}
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flashes">
+                    {% for category, message in messages %}
+                        <div class="flash flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

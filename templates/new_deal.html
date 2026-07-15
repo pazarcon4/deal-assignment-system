@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}New deal{% endblock %}
+{% block content %}
+<div class="card">
+    <h1>New deal</h1>
+    <form method="post" class="form-grid">
+        <label>
+            Client / deal name
+            <input type="text" name="client_name" value="{{ form.client_name or '' }}" required autofocus>
+        </label>
+        <label>
+            Salesforce link or ID
+            <input type="text" name="salesforce_ref" value="{{ form.salesforce_ref or '' }}" placeholder="https://... or opportunity ID">
+        </label>
+        <label>
+            Target submission date to client
+            <input type="date" name="target_submission_date" value="{{ form.target_submission_date or '' }}" required>
+        </label>
+        <label>
+            Assign to sales ops (based on workload below)
+            <select name="assigned_to">
+                <option value="">Leave unassigned for now</option>
+                {% for ops in ops_users %}
+                <option value="{{ ops.id }}" {% if form.assigned_to == ops.id|string %}selected{% endif %}>{{ ops.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label class="full-width">
+            Notes
+            <textarea name="notes" rows="3">{{ form.notes or '' }}</textarea>
+        </label>
+        <button type="submit">Create deal</button>
+    </form>
+</div>
+
+<p><a href="{{ url_for('dashboard') }}">&larr; Back to workload dashboard</a></p>
+{% endblock %}

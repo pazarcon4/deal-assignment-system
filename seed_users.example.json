@@ -1,0 +1,6 @@
+[
+    {"name": "Seller One", "email": "seller1@example.com", "role": "seller"},
+    {"name": "Seller Two", "email": "seller2@example.com", "role": "seller"},
+    {"name": "Sales Ops One", "email": "salesops1@example.com", "role": "sales_ops"},
+    {"name": "Admin One", "email": "admin1@example.com", "role": "admin"}
+]

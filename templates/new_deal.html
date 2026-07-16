@@ -17,6 +17,10 @@
             <input type="date" name="target_submission_date" value="{{ form.target_submission_date or '' }}" required>
         </label>
         <label>
+            TCV (USD)
+            <input type="number" name="tcv_usd" value="{{ form.tcv_usd or '' }}" min="0" step="0.01" placeholder="150000" required>
+        </label>
+        <label>
             Assign to sales ops (based on workload below)
             <select name="assigned_to">
                 <option value="">Leave unassigned for now</option>

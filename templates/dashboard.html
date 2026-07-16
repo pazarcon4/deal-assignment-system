@@ -23,6 +23,7 @@
                 </div>
                 <div class="deal-item-meta">
                     <span>Seller: {{ deal.seller_name }}</span>
+                    <span>TCV: {{ format_tcv(deal.tcv_usd) }}</span>
                     {% if deal.target_submission_date %}
                         {% if d is not none and d < 0 %}
                         <span class="urgency-text">Submission overdue by {{ -d }} day{{ '' if -d == 1 else 's' }}</span>
@@ -56,10 +57,13 @@
         </div>
         <div class="deal-item-meta">
             <span>Seller: {{ deal.seller_name }}</span>
+            <span>TCV: {{ format_tcv(deal.tcv_usd) }}</span>
             {% if deal.salesforce_ref %}<span>Salesforce: {{ deal.salesforce_ref }}</span>{% endif %}
             {% if deal.target_submission_date %}
             <span>Target submission: {{ deal.target_submission_date }}</span>
             {% endif %}
+            <span>Registered: {{ format_dt(deal.created_at) }}</span>
+            <span>Last updated: {{ format_dt(deal.updated_at) }}</span>
         </div>
         {% if deal.notes %}<p class="deal-notes">{{ deal.notes }}</p>{% endif %}
 
@@ -124,9 +128,12 @@
         </div>
         <div class="deal-item-meta">
             <span>Assigned to: {{ deal.assignee_name or 'unassigned' }}</span>
+            <span>TCV: {{ format_tcv(deal.tcv_usd) }}</span>
             {% if deal.salesforce_ref %}<span>Salesforce: {{ deal.salesforce_ref }}</span>{% endif %}
             {% if deal.target_submission_date %}<span>Target submission: {{ deal.target_submission_date }}</span>{% endif %}
             {% if deal.actual_submission_date %}<span>Submitted: {{ deal.actual_submission_date }}</span>{% endif %}
+            <span>Registered: {{ format_dt(deal.created_at) }}</span>
+            <span>Last updated: {{ format_dt(deal.updated_at) }}</span>
         </div>
         {% if deal.notes %}<p class="deal-notes">{{ deal.notes }}</p>{% endif %}
 
@@ -166,9 +173,12 @@
         <div class="deal-item-meta">
             <span>Seller: {{ deal.seller_name }}</span>
             <span>Assigned to: {{ deal.assignee_name or 'unassigned' }}</span>
+            <span>TCV: {{ format_tcv(deal.tcv_usd) }}</span>
             {% if deal.salesforce_ref %}<span>Salesforce: {{ deal.salesforce_ref }}</span>{% endif %}
             {% if deal.target_submission_date %}<span>Target submission: {{ deal.target_submission_date }}</span>{% endif %}
             {% if deal.actual_submission_date %}<span>Submitted: {{ deal.actual_submission_date }}</span>{% endif %}
+            <span>Registered: {{ format_dt(deal.created_at) }}</span>
+            <span>Last updated: {{ format_dt(deal.updated_at) }}</span>
         </div>
         {% if deal.notes %}<p class="deal-notes">{{ deal.notes }}</p>{% endif %}
 

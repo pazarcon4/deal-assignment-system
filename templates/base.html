@@ -3,13 +3,13 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}Deal Assignment{% endblock %}</title>
+    <title>{% block title %}{{ APP_NAME }}{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     {% if g.user %}
     <header class="topbar">
-        <a class="brand" href="{{ url_for('dashboard') }}">Deal Assignment</a>
+        <a class="brand" href="{{ url_for('dashboard') }}">{{ APP_NAME }} <span class="version-tag">{{ APP_VERSION }}</span></a>
         <nav>
             {% if g.user.role in ['seller', 'admin'] %}
             <a href="{{ url_for('new_deal') }}">New deal</a>

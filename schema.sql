@@ -17,6 +17,9 @@ CREATE TABLE IF NOT EXISTS deals (
     target_submission_date TEXT,
     actual_submission_date TEXT,
     notes TEXT,
+    tcv_usd NUMERIC(14, 2),
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS tcv_usd NUMERIC(14, 2);

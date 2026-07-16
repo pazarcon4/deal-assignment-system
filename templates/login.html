@@ -1,8 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Log in{% endblock %}
+{% block title %}Log in — {{ APP_NAME }}{% endblock %}
 {% block content %}
 <div class="card auth-card">
-    <h1>Log in</h1>
+    <h1 class="app-title">{{ APP_NAME }}</h1>
+    <p class="version-tag">{{ APP_VERSION }}</p>
+    <h2>Log in</h2>
     <form method="post">
         <label>
             Email

@@ -6,10 +6,14 @@ from flask import Flask, abort, flash, g, redirect, render_template, request, se
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from db import get_connection, init_db
+from notifications import send_email
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.environ.get("DATA_DIR", os.path.join(BASE_DIR, "instance"))
 SECRET_KEY_PATH = os.path.join(DATA_DIR, "secret_key")
+
+APP_NAME = "IBM Consulting PH Deal Registration Application"
+APP_VERSION = "v1.0"
 
 STAGE_LABELS = {
     "unassigned": "Unassigned",
@@ -94,10 +98,30 @@ def urgency_class(days):
     return "ok"
 
 
+def format_dt(dt):
+    if dt is None:
+        return ""
+    return dt.strftime("%b %-d, %Y %-I:%M %p")
+
+
+def format_tcv(value):
+    if value is None:
+        return ""
+    return "${:,.0f}".format(value)
+
+
+def get_user_by_id(conn, user_id):
+    return conn.execute("SELECT * FROM users WHERE id = %s", (user_id,)).fetchone()
+
+
 app.jinja_env.globals.update(
     STAGE_LABELS=STAGE_LABELS,
     days_until=days_until,
     urgency_class=urgency_class,
+    format_dt=format_dt,
+    format_tcv=format_tcv,
+    APP_NAME=APP_NAME,
+    APP_VERSION=APP_VERSION,
 )
 
 
@@ -217,6 +241,7 @@ def new_deal():
         target_submission_date = request.form.get("target_submission_date", "").strip()
         assigned_to = request.form.get("assigned_to", "").strip()
         notes = request.form.get("notes", "").strip()
+        tcv_raw = request.form.get("tcv_usd", "").strip()
 
         errors = []
         if not client_name:
@@ -228,6 +253,17 @@ def new_deal():
                 date.fromisoformat(target_submission_date)
             except ValueError:
                 errors.append("Target submission date must be a valid date.")
+
+        tcv_usd = None
+        if not tcv_raw:
+            errors.append("TCV is required.")
+        else:
+            try:
+                tcv_usd = float(tcv_raw)
+                if tcv_usd < 0:
+                    errors.append("TCV must be a positive number.")
+            except ValueError:
+                errors.append("TCV must be a valid number.")
 
         assigned_to_id = None
         stage = "unassigned"
@@ -254,8 +290,8 @@ def new_deal():
         conn.execute(
             """
             INSERT INTO deals (client_name, salesforce_ref, seller_id, assigned_to, stage,
-                                target_submission_date, notes)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+                                target_submission_date, notes, tcv_usd)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 client_name,
@@ -265,10 +301,22 @@ def new_deal():
                 stage,
                 target_submission_date,
                 notes or None,
+                tcv_usd,
             ),
         )
         conn.commit()
         conn.close()
+
+        if assigned_to_id:
+            send_email(
+                assignee["email"],
+                f"New deal assigned: {client_name}",
+                f"{g.user['name']} assigned you a new deal: {client_name}\n"
+                f"TCV: {format_tcv(tcv_usd)}\n"
+                f"Target submission date: {target_submission_date}\n\n"
+                f"View it: {url_for('dashboard', _external=True)}",
+            )
+
         flash("Deal created.", "success")
         return redirect(url_for("dashboard"))
 
@@ -297,7 +345,16 @@ def accept_deal(deal_id):
         (deal_id,),
     )
     conn.commit()
+    seller = get_user_by_id(conn, deal["seller_id"])
     conn.close()
+
+    send_email(
+        seller["email"],
+        f"Deal accepted: {deal['client_name']}",
+        f"{g.user['name']} accepted your deal: {deal['client_name']}\n\n"
+        f"View it: {url_for('dashboard', _external=True)}",
+    )
+
     flash("Deal accepted.", "success")
     return redirect(url_for("dashboard"))
 
@@ -320,7 +377,17 @@ def decline_deal(deal_id):
         (deal_id,),
     )
     conn.commit()
+    seller = get_user_by_id(conn, deal["seller_id"])
     conn.close()
+
+    send_email(
+        seller["email"],
+        f"Deal declined: {deal['client_name']}",
+        f"{g.user['name']} declined your deal: {deal['client_name']}. "
+        f"It's back in the unassigned pool for reassignment.\n\n"
+        f"View it: {url_for('dashboard', _external=True)}",
+    )
+
     flash("Deal declined and returned to the unassigned pool.", "success")
     return redirect(url_for("dashboard"))
 
@@ -384,7 +451,17 @@ def update_deal(deal_id):
         ),
     )
     conn.commit()
+    seller = get_user_by_id(conn, deal["seller_id"])
     conn.close()
+
+    send_email(
+        seller["email"],
+        f"Deal update: {deal['client_name']} -> {STAGE_LABELS[stage]}",
+        f"{g.user['name']} updated your deal: {deal['client_name']}\n"
+        f"New stage: {STAGE_LABELS[stage]}\n\n"
+        f"View it: {url_for('dashboard', _external=True)}",
+    )
+
     flash("Deal updated.", "success")
     return redirect(url_for("dashboard"))
 
@@ -419,6 +496,15 @@ def reassign_deal(deal_id):
     )
     conn.commit()
     conn.close()
+
+    send_email(
+        assignee["email"],
+        f"New deal assigned: {deal['client_name']}",
+        f"You've been assigned a deal: {deal['client_name']}\n"
+        f"TCV: {format_tcv(deal['tcv_usd'])}\n\n"
+        f"View it: {url_for('dashboard', _external=True)}",
+    )
+
     flash("Deal reassigned.", "success")
     return redirect(url_for("dashboard"))
 

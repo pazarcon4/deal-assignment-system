@@ -17,9 +17,9 @@ def send_email(to_email, subject, body_text):
     msg["To"] = to_email
 
     try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        with smtplib.SMTP("smtp.gmail.com", 587, timeout=5) as server:
             server.starttls()
             server.login(GMAIL_ADDRESS, GMAIL_APP_PASSWORD)
             server.sendmail(GMAIL_ADDRESS, [to_email], msg.as_string())
-    except smtplib.SMTPException as e:
+    except (smtplib.SMTPException, OSError) as e:
         print(f"notifications: failed to send email to {to_email}: {e}", file=sys.stderr)

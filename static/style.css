@@ -136,6 +136,33 @@ form input, form select, form textarea {
     font-family: inherit;
 }
 
+.password-field {
+    position: relative;
+}
+
+.password-field input {
+    padding-right: 2.4rem;
+}
+
+.password-field .toggle-password {
+    position: absolute;
+    right: 0.4rem;
+    top: 50%;
+    transform: translateY(calc(-50% + 0.15rem));
+    background: none;
+    border: none;
+    padding: 0.2rem;
+    color: var(--muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.password-field .toggle-password:hover {
+    color: var(--text);
+}
+
 form button {
     background: var(--accent);
     color: white;
@@ -191,13 +218,6 @@ form button:hover { opacity: 0.9; }
     list-style: none;
     margin: 0;
     padding: 0;
-}
-
-.deal-list.standalone {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 0.2rem 1.1rem;
 }
 
 .deal-item {
@@ -304,4 +324,82 @@ form button:hover { opacity: 0.9; }
     background: rgba(31, 146, 84, 0.12);
     color: var(--ok);
     border: 1px solid rgba(31, 146, 84, 0.3);
+}
+
+.table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card-bg);
+}
+
+table.sortable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+table.sortable th,
+table.sortable td {
+    padding: 0.65rem 0.9rem;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--border);
+}
+
+table.sortable tbody tr:last-child td {
+    border-bottom: none;
+}
+
+table.sortable th {
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--muted);
+    background: var(--bg);
+    white-space: nowrap;
+}
+
+table.sortable th:hover {
+    color: var(--text);
+}
+
+table.sortable th.sort-active.sort-asc::after {
+    content: " \25B2";
+}
+
+table.sortable th.sort-active.sort-desc::after {
+    content: " \25BC";
+}
+
+table.sortable tr.urgency-overdue td:first-child { border-left: 3px solid var(--overdue); }
+table.sortable tr.urgency-soon td:first-child { border-left: 3px solid var(--soon); }
+table.sortable tr.urgency-ok td:first-child { border-left: 3px solid var(--ok); }
+table.sortable tr.urgency-unknown td:first-child { border-left: 3px solid transparent; }
+
+.row-meta {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 0.2rem;
+}
+
+.row-notes {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-top: 0.3rem;
+    white-space: pre-wrap;
+}
+
+table.sortable details summary {
+    cursor: pointer;
+    color: var(--accent);
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+table.sortable details .update-form {
+    margin-top: 0.6rem;
+    min-width: 260px;
 }

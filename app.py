@@ -23,6 +23,14 @@ STAGE_LABELS = {
     "submitted": "Submitted",
 }
 
+STAGE_ORDER = {
+    "unassigned": 0,
+    "pending_acceptance": 1,
+    "accepted": 2,
+    "in_progress": 3,
+    "submitted": 4,
+}
+
 ACTIVE_STAGES = ("pending_acceptance", "accepted", "in_progress")
 
 
@@ -116,6 +124,7 @@ def get_user_by_id(conn, user_id):
 
 app.jinja_env.globals.update(
     STAGE_LABELS=STAGE_LABELS,
+    STAGE_ORDER=STAGE_ORDER,
     days_until=days_until,
     urgency_class=urgency_class,
     format_dt=format_dt,

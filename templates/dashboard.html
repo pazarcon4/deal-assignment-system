@@ -44,72 +44,115 @@
     {% endfor %}
 </div>
 
+{% macro update_form(deal) %}
+<details>
+    <summary>Update</summary>
+    <form method="post" action="{{ url_for('update_deal', deal_id=deal.id) }}" class="update-form">
+        <label>
+            Stage
+            <select name="stage">
+                {% if deal.stage == 'accepted' %}
+                <option value="accepted">Accepted</option>
+                <option value="in_progress">In progress</option>
+                {% elif deal.stage == 'in_progress' %}
+                <option value="in_progress">In progress</option>
+                <option value="submitted">Submitted</option>
+                {% endif %}
+            </select>
+        </label>
+        <label>
+            Target submission date
+            <input type="date" name="target_submission_date" value="{{ deal.target_submission_date or '' }}">
+        </label>
+        {% if deal.stage == 'in_progress' %}
+        <label>
+            Actual submission date (if submitting today, leave blank)
+            <input type="date" name="actual_submission_date">
+        </label>
+        {% endif %}
+        <label class="full-width">
+            Notes
+            <textarea name="notes" rows="2">{{ deal.notes or '' }}</textarea>
+        </label>
+        <button type="submit">Save update</button>
+    </form>
+</details>
+{% endmacro %}
+
+{% macro reassign_form(deal) %}
+<details>
+    <summary>Assign</summary>
+    <form method="post" action="{{ url_for('reassign_deal', deal_id=deal.id) }}" class="update-form">
+        <label>
+            Assign to
+            <select name="assigned_to" required>
+                <option value="">Choose sales ops&hellip;</option>
+                {% for entry in workload %}
+                <option value="{{ entry.user.id }}">{{ entry.user.name }} ({{ entry.deals|length }} active)</option>
+                {% endfor %}
+            </select>
+        </label>
+        <button type="submit">Assign</button>
+    </form>
+</details>
+{% endmacro %}
+
 {% if g.user.role == 'sales_ops' %}
 <h1>Needs your action</h1>
 {% if needs_action %}
-<ul class="deal-list standalone">
-    {% for deal in needs_action %}
-    {% set d = days_until(deal.target_submission_date) %}
-    <li class="deal-item urgency-{{ urgency_class(d) }}">
-        <div class="deal-item-main">
-            <strong>{{ deal.client_name }}</strong>
-            <span class="stage-badge stage-{{ deal.stage }}">{{ STAGE_LABELS[deal.stage] }}</span>
-        </div>
-        <div class="deal-item-meta">
-            <span>Seller: {{ deal.seller_name }}</span>
-            <span>TCV: {{ format_tcv(deal.tcv_usd) }}</span>
-            {% if deal.salesforce_ref %}<span>Salesforce: {{ deal.salesforce_ref }}</span>{% endif %}
-            {% if deal.target_submission_date %}
-            <span>Target submission: {{ deal.target_submission_date }}</span>
-            {% endif %}
-            <span>Registered: {{ format_dt(deal.created_at) }}</span>
-            <span>Last updated: {{ format_dt(deal.updated_at) }}</span>
-        </div>
-        {% if deal.notes %}<p class="deal-notes">{{ deal.notes }}</p>{% endif %}
-
-        {% if deal.stage == 'pending_acceptance' %}
-        <div class="deal-actions">
-            <form method="post" action="{{ url_for('accept_deal', deal_id=deal.id) }}">
-                <button type="submit" class="btn-accept">Accept</button>
-            </form>
-            <form method="post" action="{{ url_for('decline_deal', deal_id=deal.id) }}">
-                <button type="submit" class="btn-decline">Decline</button>
-            </form>
-        </div>
-        {% else %}
-        <form method="post" action="{{ url_for('update_deal', deal_id=deal.id) }}" class="update-form">
-            <label>
-                Stage
-                <select name="stage">
-                    {% if deal.stage == 'accepted' %}
-                    <option value="accepted">Accepted</option>
-                    <option value="in_progress">In progress</option>
-                    {% elif deal.stage == 'in_progress' %}
-                    <option value="in_progress">In progress</option>
-                    <option value="submitted">Submitted</option>
-                    {% endif %}
-                </select>
-            </label>
-            <label>
-                Target submission date
-                <input type="date" name="target_submission_date" value="{{ deal.target_submission_date or '' }}">
-            </label>
-            {% if deal.stage == 'in_progress' %}
-            <label>
-                Actual submission date (if submitting today, leave blank)
-                <input type="date" name="actual_submission_date">
-            </label>
-            {% endif %}
-            <label class="full-width">
-                Notes
-                <textarea name="notes" rows="2">{{ deal.notes or '' }}</textarea>
-            </label>
-            <button type="submit">Save update</button>
-        </form>
-        {% endif %}
-    </li>
-    {% endfor %}
-</ul>
+<p class="subtitle">Click a column header to sort.</p>
+<div class="table-wrap">
+<table class="sortable">
+    <thead>
+        <tr>
+            <th data-sort="client">Client</th>
+            <th data-sort="due" data-type="text" class="sort-active sort-asc">Due date</th>
+            <th data-sort="tcv" data-type="number">TCV</th>
+            <th data-sort="status" data-type="number">Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for deal in needs_action %}
+        {% set d = days_until(deal.target_submission_date) %}
+        <tr class="urgency-{{ urgency_class(d) }}"
+            data-client="{{ deal.client_name|lower }}"
+            data-due="{{ deal.target_submission_date or '9999-99-99' }}"
+            data-tcv="{{ deal.tcv_usd if deal.tcv_usd is not none else -1 }}"
+            data-status="{{ STAGE_ORDER[deal.stage] }}">
+            <td>
+                <strong>{{ deal.client_name }}</strong>
+                <div class="row-meta">Seller: {{ deal.seller_name }} &middot; Registered {{ format_dt(deal.created_at) }}</div>
+                {% if deal.notes %}<div class="row-notes">{{ deal.notes }}</div>{% endif %}
+            </td>
+            <td>
+                {% if deal.target_submission_date %}
+                    {{ deal.target_submission_date }}
+                    {% if d is not none and d < 0 %}<span class="urgency-text">({{ -d }}d overdue)</span>
+                    {% elif d is not none %}<span class="urgency-text">({{ d }}d)</span>{% endif %}
+                {% else %}&mdash;{% endif %}
+            </td>
+            <td>{{ format_tcv(deal.tcv_usd) }}</td>
+            <td><span class="stage-badge stage-{{ deal.stage }}">{{ STAGE_LABELS[deal.stage] }}</span></td>
+            <td>
+                {% if deal.stage == 'pending_acceptance' %}
+                <div class="deal-actions">
+                    <form method="post" action="{{ url_for('accept_deal', deal_id=deal.id) }}">
+                        <button type="submit" class="btn-accept">Accept</button>
+                    </form>
+                    <form method="post" action="{{ url_for('decline_deal', deal_id=deal.id) }}">
+                        <button type="submit" class="btn-decline">Decline</button>
+                    </form>
+                </div>
+                {% else %}
+                {{ update_form(deal) }}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
 {% else %}
 <p class="empty">Nothing needs your attention right now.</p>
 {% endif %}
@@ -118,42 +161,55 @@
 {% if g.user.role == 'seller' %}
 <h1>My deals</h1>
 {% if my_deals %}
-<ul class="deal-list standalone">
-    {% for deal in my_deals %}
-    {% set d = days_until(deal.target_submission_date) %}
-    <li class="deal-item urgency-{{ urgency_class(d) }}">
-        <div class="deal-item-main">
-            <strong>{{ deal.client_name }}</strong>
-            <span class="stage-badge stage-{{ deal.stage }}">{{ STAGE_LABELS[deal.stage] }}</span>
-        </div>
-        <div class="deal-item-meta">
-            <span>Assigned to: {{ deal.assignee_name or 'unassigned' }}</span>
-            <span>TCV: {{ format_tcv(deal.tcv_usd) }}</span>
-            {% if deal.salesforce_ref %}<span>Salesforce: {{ deal.salesforce_ref }}</span>{% endif %}
-            {% if deal.target_submission_date %}<span>Target submission: {{ deal.target_submission_date }}</span>{% endif %}
-            {% if deal.actual_submission_date %}<span>Submitted: {{ deal.actual_submission_date }}</span>{% endif %}
-            <span>Registered: {{ format_dt(deal.created_at) }}</span>
-            <span>Last updated: {{ format_dt(deal.updated_at) }}</span>
-        </div>
-        {% if deal.notes %}<p class="deal-notes">{{ deal.notes }}</p>{% endif %}
-
-        {% if deal.stage == 'unassigned' %}
-        <form method="post" action="{{ url_for('reassign_deal', deal_id=deal.id) }}" class="update-form">
-            <label>
-                Assign to
-                <select name="assigned_to" required>
-                    <option value="">Choose sales ops&hellip;</option>
-                    {% for entry in workload %}
-                    <option value="{{ entry.user.id }}">{{ entry.user.name }} ({{ entry.deals|length }} active)</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <button type="submit">Assign</button>
-        </form>
-        {% endif %}
-    </li>
-    {% endfor %}
-</ul>
+<p class="subtitle">Click a column header to sort.</p>
+<div class="table-wrap">
+<table class="sortable">
+    <thead>
+        <tr>
+            <th data-sort="client">Client</th>
+            <th data-sort="assignee">Assigned to</th>
+            <th data-sort="due" data-type="text" class="sort-active sort-asc">Due date</th>
+            <th data-sort="tcv" data-type="number">TCV</th>
+            <th data-sort="status" data-type="number">Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for deal in my_deals %}
+        {% set d = days_until(deal.target_submission_date) %}
+        <tr class="urgency-{{ urgency_class(d) }}"
+            data-client="{{ deal.client_name|lower }}"
+            data-assignee="{{ (deal.assignee_name or 'unassigned')|lower }}"
+            data-due="{{ deal.target_submission_date or '9999-99-99' }}"
+            data-tcv="{{ deal.tcv_usd if deal.tcv_usd is not none else -1 }}"
+            data-status="{{ STAGE_ORDER[deal.stage] }}">
+            <td>
+                <strong>{{ deal.client_name }}</strong>
+                {% if deal.salesforce_ref %}<div class="row-meta">Salesforce: {{ deal.salesforce_ref }}</div>{% endif %}
+                <div class="row-meta">Registered {{ format_dt(deal.created_at) }} &middot; Updated {{ format_dt(deal.updated_at) }}</div>
+                {% if deal.notes %}<div class="row-notes">{{ deal.notes }}</div>{% endif %}
+            </td>
+            <td>{{ deal.assignee_name or 'Unassigned' }}</td>
+            <td>
+                {% if deal.target_submission_date %}
+                    {{ deal.target_submission_date }}
+                    {% if d is not none and d < 0 %}<span class="urgency-text">({{ -d }}d overdue)</span>
+                    {% elif d is not none %}<span class="urgency-text">({{ d }}d)</span>{% endif %}
+                {% else %}&mdash;{% endif %}
+                {% if deal.actual_submission_date %}<div class="row-meta">Submitted {{ deal.actual_submission_date }}</div>{% endif %}
+            </td>
+            <td>{{ format_tcv(deal.tcv_usd) }}</td>
+            <td><span class="stage-badge stage-{{ deal.stage }}">{{ STAGE_LABELS[deal.stage] }}</span></td>
+            <td>
+                {% if deal.stage == 'unassigned' %}
+                {{ reassign_form(deal) }}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
 {% else %}
 <p class="empty">You haven't created any deals yet.</p>
 {% endif %}
@@ -162,46 +218,62 @@
 {% if g.user.role == 'admin' %}
 <h1>All deals</h1>
 {% if all_deals %}
-<ul class="deal-list standalone">
-    {% for deal in all_deals %}
-    {% set d = days_until(deal.target_submission_date) %}
-    <li class="deal-item urgency-{{ urgency_class(d) }}">
-        <div class="deal-item-main">
-            <strong>{{ deal.client_name }}</strong>
-            <span class="stage-badge stage-{{ deal.stage }}">{{ STAGE_LABELS[deal.stage] }}</span>
-        </div>
-        <div class="deal-item-meta">
-            <span>Seller: {{ deal.seller_name }}</span>
-            <span>Assigned to: {{ deal.assignee_name or 'unassigned' }}</span>
-            <span>TCV: {{ format_tcv(deal.tcv_usd) }}</span>
-            {% if deal.salesforce_ref %}<span>Salesforce: {{ deal.salesforce_ref }}</span>{% endif %}
-            {% if deal.target_submission_date %}<span>Target submission: {{ deal.target_submission_date }}</span>{% endif %}
-            {% if deal.actual_submission_date %}<span>Submitted: {{ deal.actual_submission_date }}</span>{% endif %}
-            <span>Registered: {{ format_dt(deal.created_at) }}</span>
-            <span>Last updated: {{ format_dt(deal.updated_at) }}</span>
-        </div>
-        {% if deal.notes %}<p class="deal-notes">{{ deal.notes }}</p>{% endif %}
-
-        {% if deal.stage == 'unassigned' %}
-        <form method="post" action="{{ url_for('reassign_deal', deal_id=deal.id) }}" class="update-form">
-            <label>
-                Assign to
-                <select name="assigned_to" required>
-                    <option value="">Choose sales ops&hellip;</option>
-                    {% for entry in workload %}
-                    <option value="{{ entry.user.id }}">{{ entry.user.name }} ({{ entry.deals|length }} active)</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <button type="submit">Assign</button>
-        </form>
-        {% endif %}
-    </li>
-    {% endfor %}
-</ul>
+<p class="subtitle">Click a column header to sort.</p>
+<div class="table-wrap">
+<table class="sortable">
+    <thead>
+        <tr>
+            <th data-sort="client">Client</th>
+            <th data-sort="seller">Seller</th>
+            <th data-sort="assignee">Assigned to</th>
+            <th data-sort="due" data-type="text" class="sort-active sort-asc">Due date</th>
+            <th data-sort="tcv" data-type="number">TCV</th>
+            <th data-sort="status" data-type="number">Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for deal in all_deals %}
+        {% set d = days_until(deal.target_submission_date) %}
+        <tr class="urgency-{{ urgency_class(d) }}"
+            data-client="{{ deal.client_name|lower }}"
+            data-seller="{{ deal.seller_name|lower }}"
+            data-assignee="{{ (deal.assignee_name or 'unassigned')|lower }}"
+            data-due="{{ deal.target_submission_date or '9999-99-99' }}"
+            data-tcv="{{ deal.tcv_usd if deal.tcv_usd is not none else -1 }}"
+            data-status="{{ STAGE_ORDER[deal.stage] }}">
+            <td>
+                <strong>{{ deal.client_name }}</strong>
+                {% if deal.salesforce_ref %}<div class="row-meta">Salesforce: {{ deal.salesforce_ref }}</div>{% endif %}
+                <div class="row-meta">Registered {{ format_dt(deal.created_at) }} &middot; Updated {{ format_dt(deal.updated_at) }}</div>
+                {% if deal.notes %}<div class="row-notes">{{ deal.notes }}</div>{% endif %}
+            </td>
+            <td>{{ deal.seller_name }}</td>
+            <td>{{ deal.assignee_name or 'Unassigned' }}</td>
+            <td>
+                {% if deal.target_submission_date %}
+                    {{ deal.target_submission_date }}
+                    {% if d is not none and d < 0 %}<span class="urgency-text">({{ -d }}d overdue)</span>
+                    {% elif d is not none %}<span class="urgency-text">({{ d }}d)</span>{% endif %}
+                {% else %}&mdash;{% endif %}
+                {% if deal.actual_submission_date %}<div class="row-meta">Submitted {{ deal.actual_submission_date }}</div>{% endif %}
+            </td>
+            <td>{{ format_tcv(deal.tcv_usd) }}</td>
+            <td><span class="stage-badge stage-{{ deal.stage }}">{{ STAGE_LABELS[deal.stage] }}</span></td>
+            <td>
+                {% if deal.stage == 'unassigned' %}
+                {{ reassign_form(deal) }}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
 {% else %}
 <p class="empty">No deals in the system yet.</p>
 {% endif %}
 {% endif %}
 
+<script src="{{ url_for('static', filename='app.js') }}"></script>
 {% endblock %}

@@ -412,6 +412,25 @@ table.sortable details summary {
     text-decoration: underline;
 }
 
+.delete-form {
+    display: inline-block;
+    margin: 0 0.6rem 0 0;
+}
+
+.delete-link {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--danger);
+    font-size: 0.85rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.delete-link:hover {
+    text-decoration: underline;
+}
+
 table.sortable details .update-form {
     margin-top: 0.6rem;
     min-width: 260px;

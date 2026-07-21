@@ -402,6 +402,22 @@ def edit_deal(deal_id):
     return render_template("edit_deal.html", deal=deal, form=None)
 
 
+@app.route("/deals/<int:deal_id>/delete", methods=["POST"])
+@role_required("seller", "admin")
+def delete_deal(deal_id):
+    conn = get_connection()
+    deal = get_deal_or_404(conn, deal_id)
+    if g.user["role"] == "seller" and deal["seller_id"] != g.user["id"]:
+        conn.close()
+        abort(403)
+
+    conn.execute("DELETE FROM deals WHERE id = %s", (deal_id,))
+    conn.commit()
+    conn.close()
+    flash(f"Deal \"{deal['client_name']}\" deleted.", "success")
+    return redirect(url_for("dashboard"))
+
+
 @app.route("/deals/<int:deal_id>/accept", methods=["POST"])
 @role_required("sales_ops")
 def accept_deal(deal_id):

@@ -569,15 +569,21 @@ def update_deal(deal_id):
     return redirect(url_for("dashboard"))
 
 
+REASSIGNABLE_STAGES = ("unassigned", "pending_acceptance", "accepted", "in_progress")
+
+
 @app.route("/deals/<int:deal_id>/reassign", methods=["POST"])
-@role_required("seller", "admin")
+@role_required("seller", "admin", "sales_ops")
 def reassign_deal(deal_id):
     conn = get_connection()
     deal = get_deal_or_404(conn, deal_id)
-    if deal["stage"] != "unassigned":
+    if deal["stage"] not in REASSIGNABLE_STAGES:
         conn.close()
         abort(403)
     if g.user["role"] == "seller" and deal["seller_id"] != g.user["id"]:
+        conn.close()
+        abort(403)
+    if g.user["role"] == "sales_ops" and deal["assigned_to"] != g.user["id"]:
         conn.close()
         abort(403)
 
@@ -590,6 +596,8 @@ def reassign_deal(deal_id):
         flash("Selected sales ops assignee is invalid.", "error")
         return redirect(url_for("dashboard"))
 
+    old_assignee_id = deal["assigned_to"]
+
     conn.execute(
         """
         UPDATE deals SET assigned_to = %s, stage = 'pending_acceptance', updated_at = NOW()
@@ -598,6 +606,25 @@ def reassign_deal(deal_id):
         (assignee["id"], deal_id),
     )
     conn.commit()
+
+    if old_assignee_id and old_assignee_id != g.user["id"]:
+        old_assignee = get_user_by_id(conn, old_assignee_id)
+        send_email(
+            old_assignee["email"],
+            f"Deal reassigned: {deal['client_name']}",
+            f"{g.user['name']} reassigned this deal to someone else: {deal['client_name']}\n\n"
+            f"View it: {url_for('dashboard', _external=True)}",
+        )
+
+    if deal["seller_id"] != g.user["id"]:
+        seller = get_user_by_id(conn, deal["seller_id"])
+        send_email(
+            seller["email"],
+            f"Deal reassigned: {deal['client_name']}",
+            f"{g.user['name']} reassigned your deal to {assignee['name']}: {deal['client_name']}\n\n"
+            f"View it: {url_for('dashboard', _external=True)}",
+        )
+
     conn.close()
 
     send_email(

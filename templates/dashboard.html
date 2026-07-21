@@ -79,16 +79,18 @@
 </details>
 {% endmacro %}
 
-{% macro reassign_form(deal) %}
+{% macro reassign_form(deal, label='Assign / Reassign') %}
 <details>
-    <summary>Assign</summary>
+    <summary>{{ label }}</summary>
     <form method="post" action="{{ url_for('reassign_deal', deal_id=deal.id) }}" class="update-form">
         <label>
             Assign to
             <select name="assigned_to" required>
                 <option value="">Choose sales ops&hellip;</option>
                 {% for entry in workload %}
+                {% if entry.user.id != deal.assigned_to %}
                 <option value="{{ entry.user.id }}">{{ entry.user.name }} ({{ entry.deals|length }} active)</option>
+                {% endif %}
                 {% endfor %}
             </select>
         </label>
@@ -146,6 +148,7 @@
                 </div>
                 {% else %}
                 {{ update_form(deal) }}
+                {{ reassign_form(deal, label='Hand off') }}
                 {% endif %}
             </td>
         </tr>
@@ -211,7 +214,7 @@
                       onsubmit='return confirm("Delete " + {{ deal.client_name|tojson }} + "? This cannot be undone.");'>
                     <button type="submit" class="delete-link">Delete</button>
                 </form>
-                {% if deal.stage == 'unassigned' %}
+                {% if deal.stage != 'submitted' %}
                 {{ reassign_form(deal) }}
                 {% endif %}
             </td>
@@ -281,7 +284,7 @@
                       onsubmit='return confirm("Delete " + {{ deal.client_name|tojson }} + "? This cannot be undone.");'>
                     <button type="submit" class="delete-link">Delete</button>
                 </form>
-                {% if deal.stage == 'unassigned' %}
+                {% if deal.stage != 'submitted' %}
                 {{ reassign_form(deal) }}
                 {% endif %}
             </td>

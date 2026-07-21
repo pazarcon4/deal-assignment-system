@@ -1,25 +1,32 @@
 import os
-import smtplib
 import sys
-from email.mime.text import MIMEText
 
-GMAIL_ADDRESS = os.environ.get("GMAIL_ADDRESS")
-GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD")
+import requests
+
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
+FROM_ADDRESS = os.environ.get("NOTIFY_FROM_ADDRESS", "onboarding@resend.dev")
 
 
 def send_email(to_email, subject, body_text):
-    if not GMAIL_ADDRESS or not GMAIL_APP_PASSWORD:
+    if not RESEND_API_KEY:
         return
-
-    msg = MIMEText(body_text)
-    msg["Subject"] = subject
-    msg["From"] = GMAIL_ADDRESS
-    msg["To"] = to_email
-
     try:
-        with smtplib.SMTP("smtp.gmail.com", 587, timeout=5) as server:
-            server.starttls()
-            server.login(GMAIL_ADDRESS, GMAIL_APP_PASSWORD)
-            server.sendmail(GMAIL_ADDRESS, [to_email], msg.as_string())
-    except (smtplib.SMTPException, OSError) as e:
+        response = requests.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {RESEND_API_KEY}"},
+            json={
+                "from": FROM_ADDRESS,
+                "to": [to_email],
+                "subject": subject,
+                "text": body_text,
+            },
+            timeout=5,
+        )
+        if not response.ok:
+            print(
+                f"notifications: Resend rejected email to {to_email}: "
+                f"{response.status_code} {response.text}",
+                file=sys.stderr,
+            )
+    except requests.RequestException as e:
         print(f"notifications: failed to send email to {to_email}: {e}", file=sys.stderr)

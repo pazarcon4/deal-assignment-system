@@ -185,7 +185,12 @@
             data-status="{{ STAGE_ORDER[deal.stage] }}">
             <td>
                 <strong>{{ deal.client_name }}</strong>
-                {% if deal.salesforce_ref %}<div class="row-meta">Salesforce: {{ deal.salesforce_ref }}</div>{% endif %}
+                {% if deal.salesforce_ref %}
+                {% set sf_link = salesforce_link(deal.salesforce_ref) %}
+                <div class="row-meta">Salesforce:
+                    {% if sf_link %}<a href="{{ sf_link }}" target="_blank" rel="noopener">{{ deal.salesforce_ref }}</a>{% else %}{{ deal.salesforce_ref }}{% endif %}
+                </div>
+                {% endif %}
                 <div class="row-meta">Registered {{ format_dt(deal.created_at) }} &middot; Updated {{ format_dt(deal.updated_at) }}</div>
                 {% if deal.notes %}<div class="row-notes">{{ deal.notes }}</div>{% endif %}
             </td>
@@ -249,7 +254,12 @@
             data-status="{{ STAGE_ORDER[deal.stage] }}">
             <td>
                 <strong>{{ deal.client_name }}</strong>
-                {% if deal.salesforce_ref %}<div class="row-meta">Salesforce: {{ deal.salesforce_ref }}</div>{% endif %}
+                {% if deal.salesforce_ref %}
+                {% set sf_link = salesforce_link(deal.salesforce_ref) %}
+                <div class="row-meta">Salesforce:
+                    {% if sf_link %}<a href="{{ sf_link }}" target="_blank" rel="noopener">{{ deal.salesforce_ref }}</a>{% else %}{{ deal.salesforce_ref }}{% endif %}
+                </div>
+                {% endif %}
                 <div class="row-meta">Registered {{ format_dt(deal.created_at) }} &middot; Updated {{ format_dt(deal.updated_at) }}</div>
                 {% if deal.notes %}<div class="row-notes">{{ deal.notes }}</div>{% endif %}
             </td>

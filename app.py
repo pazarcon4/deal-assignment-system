@@ -1,4 +1,5 @@
 import os
+import re
 from datetime import date, datetime
 from functools import wraps
 
@@ -14,6 +15,9 @@ SECRET_KEY_PATH = os.path.join(DATA_DIR, "secret_key")
 
 APP_NAME = "IBM Consulting PH Deal Registration Application"
 APP_VERSION = "v1.0"
+
+SALESFORCE_BASE_URL = "https://ibmsc.lightning.force.com"
+SALESFORCE_ID_PATTERN = re.compile(r"^[a-zA-Z0-9]{15}([a-zA-Z0-9]{3})?$")
 
 STAGE_LABELS = {
     "unassigned": "Unassigned",
@@ -122,6 +126,17 @@ def get_user_by_id(conn, user_id):
     return conn.execute("SELECT * FROM users WHERE id = %s", (user_id,)).fetchone()
 
 
+def salesforce_link(ref):
+    if not ref:
+        return None
+    ref = ref.strip()
+    if ref.startswith("http://") or ref.startswith("https://"):
+        return ref
+    if SALESFORCE_ID_PATTERN.match(ref):
+        return f"{SALESFORCE_BASE_URL}/lightning/r/Opportunity/{ref}/view"
+    return None
+
+
 app.jinja_env.globals.update(
     STAGE_LABELS=STAGE_LABELS,
     STAGE_ORDER=STAGE_ORDER,
@@ -129,6 +144,7 @@ app.jinja_env.globals.update(
     urgency_class=urgency_class,
     format_dt=format_dt,
     format_tcv=format_tcv,
+    salesforce_link=salesforce_link,
     APP_NAME=APP_NAME,
     APP_VERSION=APP_VERSION,
 )

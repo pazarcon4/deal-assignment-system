@@ -385,6 +385,10 @@ table.sortable tr.urgency-unknown td:first-child { border-left: 3px solid transp
     margin-top: 0.2rem;
 }
 
+.row-meta a {
+    color: var(--accent);
+}
+
 .row-notes {
     font-size: 0.82rem;
     color: var(--muted);

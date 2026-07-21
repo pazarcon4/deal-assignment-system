@@ -399,6 +399,19 @@ table.sortable details summary {
     white-space: nowrap;
 }
 
+.edit-link {
+    display: inline-block;
+    color: var(--accent);
+    font-size: 0.85rem;
+    text-decoration: none;
+    white-space: nowrap;
+    margin-right: 0.6rem;
+}
+
+.edit-link:hover {
+    text-decoration: underline;
+}
+
 table.sortable details .update-form {
     margin-top: 0.6rem;
     min-width: 260px;

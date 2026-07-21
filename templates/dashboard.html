@@ -201,6 +201,7 @@
             <td>{{ format_tcv(deal.tcv_usd) }}</td>
             <td><span class="stage-badge stage-{{ deal.stage }}">{{ STAGE_LABELS[deal.stage] }}</span></td>
             <td>
+                <a href="{{ url_for('edit_deal', deal_id=deal.id) }}" class="edit-link">Edit</a>
                 {% if deal.stage == 'unassigned' %}
                 {{ reassign_form(deal) }}
                 {% endif %}
@@ -261,6 +262,7 @@
             <td>{{ format_tcv(deal.tcv_usd) }}</td>
             <td><span class="stage-badge stage-{{ deal.stage }}">{{ STAGE_LABELS[deal.stage] }}</span></td>
             <td>
+                <a href="{{ url_for('edit_deal', deal_id=deal.id) }}" class="edit-link">Edit</a>
                 {% if deal.stage == 'unassigned' %}
                 {{ reassign_form(deal) }}
                 {% endif %}

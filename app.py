@@ -340,6 +340,68 @@ def get_deal_or_404(conn, deal_id):
     return deal
 
 
+@app.route("/deals/<int:deal_id>/edit", methods=["GET", "POST"])
+@role_required("seller", "admin")
+def edit_deal(deal_id):
+    conn = get_connection()
+    deal = get_deal_or_404(conn, deal_id)
+    if g.user["role"] == "seller" and deal["seller_id"] != g.user["id"]:
+        conn.close()
+        abort(403)
+
+    if request.method == "POST":
+        client_name = request.form.get("client_name", "").strip()
+        salesforce_ref = request.form.get("salesforce_ref", "").strip()
+        target_submission_date = request.form.get("target_submission_date", "").strip()
+        notes = request.form.get("notes", "").strip()
+        tcv_raw = request.form.get("tcv_usd", "").strip()
+
+        errors = []
+        if not client_name:
+            errors.append("Client / deal name is required.")
+        if not target_submission_date:
+            errors.append("Target submission date is required.")
+        else:
+            try:
+                date.fromisoformat(target_submission_date)
+            except ValueError:
+                errors.append("Target submission date must be a valid date.")
+
+        tcv_usd = None
+        if not tcv_raw:
+            errors.append("TCV is required.")
+        else:
+            try:
+                tcv_usd = float(tcv_raw)
+                if tcv_usd < 0:
+                    errors.append("TCV must be a positive number.")
+            except ValueError:
+                errors.append("TCV must be a valid number.")
+
+        if errors:
+            for error in errors:
+                flash(error, "error")
+            conn.close()
+            return render_template("edit_deal.html", deal=deal, form=request.form)
+
+        conn.execute(
+            """
+            UPDATE deals
+            SET client_name = %s, salesforce_ref = %s, target_submission_date = %s,
+                notes = %s, tcv_usd = %s, updated_at = NOW()
+            WHERE id = %s
+            """,
+            (client_name, salesforce_ref or None, target_submission_date, notes or None, tcv_usd, deal_id),
+        )
+        conn.commit()
+        conn.close()
+        flash("Deal updated.", "success")
+        return redirect(url_for("dashboard"))
+
+    conn.close()
+    return render_template("edit_deal.html", deal=deal, form=None)
+
+
 @app.route("/deals/<int:deal_id>/accept", methods=["POST"])
 @role_required("sales_ops")
 def accept_deal(deal_id):
